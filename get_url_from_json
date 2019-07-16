@@ -1,0 +1,36 @@
+# -*- coding: utf-8 -*-
+import os
+import json
+import sys
+import argparse
+
+
+keys = ["danghui","danghuiScore"]
+def isValidKeys(key_list,dict_list):
+    for key in key_list:
+	if key not in dict_list:
+	    return False
+    return True
+
+def extract_img_urls(in_file, out_file):
+    newfile = open(out_file,'w')
+    with open(in_file,'r') as f:
+        for line in f:
+	    try:
+	        json_txt = json.loads(line.strip())
+	    except:
+	        continue
+	    for key in json_txt:
+	        if not isValidKeys(keys,json_txt[key]):
+		    continue
+	        out_str = "\t".join(map(lambda x:str(x),[json_txt[key][i] for i in keys]))
+	        newfile.write(key + "\n" + out_str + "\n")
+    f.close()
+    newfile.close()
+if __name__ == '__main__':
+
+    pars = argparse.ArgumentParser()
+    pars.add_argument('input_file')
+    pars.add_argument('output_file')
+    args = pars.parse_args()
+    extract_img_urls(args.input_file, args.output_file)
