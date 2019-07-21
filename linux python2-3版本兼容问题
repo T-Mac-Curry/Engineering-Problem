@@ -1,3 +1,63 @@
+=============================================================
+亲测可用版
+1. 下载python3的包，在/usr/local/python3中编译
+mkdir /usr/local/python3
+
+2. 修改本机自带python2目录(如果不修改，总出现python3的pip报错问题)
+/usr/lib/python2.7 --->  /usr/lib/python2.7_src
+
+3. 创建切换到python3的脚本。
+vim /usr/transpy2.sh
+键入：
+\rm /usr/lib/python
+ln -s /usr/lib/python2.7_src /usr/lib/python
+
+\rm /usr/bin/python
+ln -s /usr/bin/python2 /usr/bin/python
+
+rm /usr/bin/pip
+ln -s /usr/bin/pip2 /usr/bin/pip
+
+4. 创建切换到python3的脚本：
+vim /usr/transpy3.sh
+键入：
+\rm /usr/lib/python
+ln -s /usr/local/python3/lib/python3.6 /usr/lib/python
+
+\rm /usr/bin/python
+ln -s /usr/local/python3/bin/python3 /usr/bin/python
+
+rm /usr/bin/pip
+ln -s /usr/local/python3/bin/pip3 /usr/bin/pip
+
+5. 添加PYTHONPATH路径
+vim /etc/profile
+添加PYTHONPATH路径
+export PYTHONPATH=$PYTHONPATH:/usr/lib/python/site-packages
+
+6. 自定义切换版本的命令：
+vim ~/.bashrc
+键入：
+# shift python version
+# shift python2
+alias transpy2='sh /usr/transpy2.sh'
+
+# shift python3
+alias transpy3='sh /usr/transpy3.sh'
+
+source ~/.bashrc
+
+7. 自由切换使用
+python2 --> python3
+键入：transpy3
+python3 --> python2
+键入：transpy2
+
+注：当python和pip都变成了版本3，这时的yum命令，会出现问题，当想使用yum命令时，直接切换到版本2的环境下操作即可。
+(完)
+
+=============================================================
+网上高端版，在pip命令上遇到了问题，python2-python3互相转换没有问题。
 virtualenvwrapper是管理Python虚拟环境的工具，可以很方便的为不同的项目建立独立的环境，每个项目都可以安装自己的依赖，同时也支持在不同的虚拟环境中存在不同版本的Python。
 
 1.安装virtualenvwrapper
@@ -59,3 +119,11 @@ cd  /path/to/your/project
 
 参考：
 链接：https://www.jianshu.com/p/ae40472ac925
+
+
+
+
+
+
+
+
