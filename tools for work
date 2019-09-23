@@ -1,0 +1,18 @@
+1 img TO url
+安装JAVA
+安装openjdk
+更新软件包列表：
+
+$ sudo apt-get update
+安装openjdk-8-jdk：
+
+$ sudo apt-get install openjdk-8-jdk
+查看java版本：
+
+$ java -version
+
+root@10.207.177.230:/home/zuoxinmeng/tool/puzzle-server-1.0-SNAPSHOT-assembly
+cd bin
+sh start.sh img_path imglist
+
+==============================================================================================
