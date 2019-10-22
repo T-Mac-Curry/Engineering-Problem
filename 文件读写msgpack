@@ -1,0 +1,40 @@
+https://github.com/msgpack/msgpack-c
+序列化到文件中
+https://github.com/msgpack/msgpack-c/issues/196#issuecomment-70394538
+
+核心是将自己要保存的变量，m_str,m_vec，添加到
+MSGPACK_DEFINE(m_str, m_vec);
+
+https://github.com/msgpack/msgpack-c/blob/master/QUICKSTART-CPP.md
+======================================================
+#include <msgpack.hpp>
+#include <vector>
+#include <string>
+
+class myclass {
+private:
+    std::string m_str;
+    std::vector<int> m_vec;
+public:
+    MSGPACK_DEFINE(m_str, m_vec);
+};
+
+int main() {
+        std::vector<myclass> vec;
+        // add some elements into vec...
+
+        // you can serialize myclass directly
+        msgpack::sbuffer sbuf;
+        msgpack::pack(sbuf, vec);
+
+        msgpack::object_handle oh =
+            msgpack::unpack(sbuf.data(), sbuf.size());
+
+        msgpack::object obj = oh.get();
+
+        // you can convert object to myclass directly
+        std::vector<myclass> rvec;
+        obj.convert(rvec);
+}
+===============================================================================
+
