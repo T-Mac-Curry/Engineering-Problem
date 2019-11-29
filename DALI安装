@@ -1,0 +1,162 @@
+升级CMake 3.11
+安装NVJPEG
+进入bashrc后，将NVJPEG的初始目录加入PATH中
+
+######################################################
+#    在wget下载GitHub的那几个包时，下载速度非常慢，  #
+#    很可能会出现下载到一半连接中断的情况，用多长时  #
+#    间能下载下来，那就随缘看运气了~~                #
+#    除下载慢之外，后续编译安装也是非常慢，大概需要  #
+#    4~5个小时                                       #
+######################################################
+
+echo "start time: $(date +%Y-%m-%d\ %H:%M:%S)"
+start=$(date "+%s")
+
+export PATH=/mnt/lustre/share/gcc/gcc-5.4/bin:$PATH
+export PATH=/mnt/lustre/share/boost_1_65_1/bin:$PATH
+export PATH=/mnt/lustre/share/cuda-9.0/bin:$PATH
+export PATH=/mnt/lustre/share/cmake-3.11.0-Linux-x86_64/bin:$PATH
+
+INSTALL_DIR=/mnt/lustre/zhangjiawei1/dali-dev
+
+mkdir -p dali-dev
+cd dali-dev
+
+#download & extract_files
+echo "*********************************"
+echo "*      start download           *"
+echo "*********************************"
+wget https://developer.download.nvidia.cn/compute/redist/libnvjpeg/cuda-linux64-nvjpeg-9.0.719-25900922.tar.gz
+wget https://github.com/opencv/opencv/archive/3.4.4.tar.gz
+wget http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz
+wget https://developer.download.nvidia.cn/compute/redist/nvidia-dali/ffmpeg-3.4.2.tar.bz2
+wget https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.2.tar.gz
+wget https://github.com/protocolbuffers/protobuf/archive/v3.5.1.1.tar.gz
+git clone --recursive https://github.com/NVIDIA/dali
+tar -zxvf cuda-linux64-nvjpeg-9.0.719-25900922.tar.gz
+tar -zxvf 3.4.4.tar.gz
+tar -xvf yasm-1.3.0.tar.gz
+tar -xvf ffmpeg-3.4.2.tar.bz2
+tar -zxvf 2.0.2.tar.gz
+tar -xvf v3.5.1.1.tar.gz
+
+#nvjpeg
+echo "*********************************"
+echo "*      nvjpeg                   *"
+echo "*********************************"
+export PATH=$INSTALL_DIR/cuda-linux64-nvjpeg:$PATH
+
+#opencv 3.4.4
+echo "*********************************"
+echo "*      opencv                   *"
+echo "*********************************"
+cd opencv-3.4.4
+mkdir -p build
+cd build
+cmake .. -DWITH_GTK_2_X=ON -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/opencv -DCMAKE_BUILD_TYPE=RELEASE -DWITH_TBB=ON -DBUILD_NEW_PYTHON_SUPPORT=ON -DWITH_V4L=ON -DINSTALL_C_EXAMPLES=ON -DINSTALL_PYTHON_EXAMPLES=ON -DBUILD_EXAMPLES=ON  -DWITH_OPENGL=ON -DENABLE_FAST_MATH=1 -DCUDA_FAST_MATH=1 -DWITH_CUBLAS=1 -DWITH_OPENMP=ON
+make -j16
+make install
+cd ../..
+export PATH=$INSTALL_DIR/opencv:$PATH
+
+#yasm_compiler
+echo "*********************************"
+echo "*      yasm                     *"
+echo "*********************************"
+cd yasm-1.3.0
+./configure --prefix=$INSTALL_DIR/yasm
+make
+make install
+cd ..
+export PATH=$INSTALL_DIR/yasm/bin:$PATH
+
+# ffmpeg-3.4.2
+echo "*********************************"
+echo "*      ffmpeg                   *"
+echo "*********************************"
+cd ffmpeg-3.4.2
+./configure \
+ --prefix=$INSTALL_DIR/ffmpeg \
+ --disable-static \
+ --disable-all \
+ --disable-autodetect \
+ --disable-iconv \
+ --enable-shared \
+ --enable-avformat \
+ --enable-avcodec \
+ --enable-avfilter \
+ --enable-protocol=file \
+ --enable-demuxer=mov,matroska \
+ --enable-bsf=h264_mp4toannexb,hevc_mp4toannexb
+make -j16
+make install
+cd ..
+export PATH=$INSTALL_DIR/ffmpeg:$PATH
+export FFMPEG_HOME=$INSTALL_DIR/ffmpeg
+
+#libjpeg-turbo
+echo "*********************************"
+echo "*      libjpeg-turbo            *"
+echo "*********************************"
+cd libjpeg-turbo-2.0.2
+mkdir -p build
+cd build
+cmake -G"Unix Makefiles" -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR/libjpeg-turbo ..
+make
+make install
+cd ../..
+export PATH=$INSTALL_DIR/libjpeg-turbo/bin:$PATH
+export LD_LIBRARY_PATH=$INSTALL_DIR/ffmpeg/lib:$INSTALL_DIR/libjpeg-turbo/lib64:$LD_LIBRARY_PATH
+export C_INCLUDE_PATH=$INSTALL_DIR/ffmpeg/include:$INSTALL_DIR/libjpeg-turbo/include:$C_INCLUDE_PATH
+export CPLUS_INCLUDE_PATH=$INSTALL_DIR/ffmpeg/include:$INSTALL_DIR/libjpeg-turbo/include:$CPLUS_INCLUDE_PATH
+
+#protobuf
+echo "*********************************"
+echo "*      protobuf                 *"
+echo "*********************************"
+cd protobuf-3.5.1.1
+aclocal 
+autoconf 
+autoheader 
+libtoolize --automake --copy --debug --force
+./autogen.sh
+./autogen.sh      # 不知道为什么，执行一遍会报错，执行第二遍就可以正常运行
+# https://blog.csdn.net/Ben_Ben_Niao/article/details/51924119 [4.Cmake生成.so文件]
+sed -i '2000,3000s/  CFLAGS=""/  CFLAGS="-fPIC"/g' configure
+sed -i '2000,3000s/  CXXFLAGS=""/  CXXFLAGS="-fPIC"/g' configure
+sed -ie '1i set(CMAKE_CXX_FLAGS "-fPIC")' cmake/CMakeLists.txt
+./configure --prefix=$INSTALL_DIR/protobuf
+make -j16
+make install
+cd ..
+export CMAKE_LIBRARY_PATH=$INSTALL_DIR/protobuf/lib:$CMAKE_LIBRARY_PATH
+export CMAKE_INCLUDE_PATH=$INSTALL_DIR/protobuf/include:$CMAKE_INCLUDE_PATH
+
+# install dali
+echo "*********************************"
+echo "*      dali cmake               *"
+echo "*********************************"
+cd dali
+mkdir -p build
+cd build
+cmake -DBUILD_LMDB=ON -DFFMPEG_ROOT_DIR=$INSTALL_DIR/ffmpeg -DProtobuf_DEBUG=1 -DProtobuf_INCLUDE_DIR=$INSTALL_DIR/protobuf/include -DProtobuf_PROTOC_EXECUTABLE=$INSTALL_DIR/protobuf/bin/protoc -DJPEG_INCLUDE_DIR=$INSTALL_DIR/libjpeg-turbo/include -DJPEG_LIBRARY=$INSTALL_DIR/libjpeg-turbo/lib64/libjpeg.so -DCMAKE_INSTALL_PREFIX=$HOME/.local ..
+echo "*********************************"
+echo "*      dali make                *"
+echo "*********************************"
+make -j16
+echo "*********************************"
+echo "*      dali make-install        *"
+echo "*********************************"
+make install
+
+#install pip package
+echo "*********************************"
+echo "*      dali pip-install         *"
+echo "*********************************"
+pip install --user dali/python
+
+echo "end time: $(date +%Y-%m-%d\ %H:%M:%S)"
+now=$(date "+%s")
+time=$((now-start))
+echo "time used: $time seconds"
